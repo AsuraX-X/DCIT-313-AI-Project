@@ -1,0 +1,18 @@
+(defun irrigation-agent (soil-moisture temperature rain)
+  (cond
+    ((and (eq soil-moisture 'dry)
+          (eq temperature 'high)
+          (eq rain 'no))
+     'water-heavy)
+    ((and (eq soil-moisture 'dry)
+          (eq rain 'no))
+     'water-light)
+    ((or (eq soil-moisture 'moist)
+         (eq soil-moisture 'wet)
+         (eq rain 'yes))
+     'no-water)
+    (t 'no-action)))
+
+(print (irrigation-agent 'dry 'high 'no))
+(print (irrigation-agent 'dry 'medium 'no))
+(print (irrigation-agent 'wet 'low 'yes))

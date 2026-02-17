@@ -37,12 +37,12 @@ The agent maintains a model of the world that gets updated with each percept, al
 
 ## Decision Rules
 
-| Rule | Condition | Action | Reasoning |
-|------|-----------|--------|-----------|
-| 1 | Raining | WAIT | Don't waste water |
-| 2 | Moisture < 0.35 | IRRIGATE | Soil is very dry |
-| 3 | Last action = IRRIGATE AND moisture < 0.45 | IRRIGATE | Continue irrigation cycle |
-| 4 | Default | WAIT | Conservative default |
+| Rule | Condition                                  | Action   | Reasoning                 |
+| ---- | ------------------------------------------ | -------- | ------------------------- |
+| 1    | Raining                                    | WAIT     | Don't waste water         |
+| 2    | Moisture < 0.35                            | IRRIGATE | Soil is very dry          |
+| 3    | Last action = IRRIGATE AND moisture < 0.45 | IRRIGATE | Continue irrigation cycle |
+| 4    | Default                                    | WAIT     | Conservative default      |
 
 **Rule 3 is the key difference** - it uses memory to continue an irrigation cycle once started.
 
@@ -59,6 +59,7 @@ The agent maintains a model of the world that gets updated with each percept, al
 ```
 
 **Key Points:**
+
 - Uses a **closure** to encapsulate internal state
 - `state` persists between function calls
 - Each call to `make-model-based-reflex-agent` creates a new agent with fresh state
@@ -88,11 +89,11 @@ The agent maintains a model of the world that gets updated with each percept, al
 
 Consider this scenario:
 
-| Step | Moisture | Simple Reflex | Model-Based |
-|------|----------|---------------|-------------|
-| 1 | 0.30 | IRRIGATE | IRRIGATE |
-| 2 | 0.43 | WAIT | IRRIGATE (continues!) |
-| 3 | 0.46 | WAIT | WAIT |
+| Step | Moisture | Simple Reflex | Model-Based           |
+| ---- | -------- | ------------- | --------------------- |
+| 1    | 0.30     | IRRIGATE      | IRRIGATE              |
+| 2    | 0.43     | WAIT          | IRRIGATE (continues!) |
+| 3    | 0.46     | WAIT          | WAIT                  |
 
 The model-based agent **continues irrigating** until moisture reaches 0.45, preventing the "start-stop" behavior of the simple reflex agent.
 

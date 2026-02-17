@@ -23,12 +23,12 @@ The agent receives a percept and immediately selects an action based on predefin
 
 ## Decision Rules
 
-| Rule | Condition | Action | Reasoning |
-|------|-----------|--------|-----------|
-| 1 | Raining | WAIT | Don't waste water |
-| 2 | Moisture ≥ 0.5 | WAIT | Soil is moist enough |
-| 3 | Moisture < 0.3 | IRRIGATE | Soil is too dry |
-| 4 | Default | WAIT | Conservative default |
+| Rule | Condition      | Action   | Reasoning            |
+| ---- | -------------- | -------- | -------------------- |
+| 1    | Raining        | WAIT     | Don't waste water    |
+| 2    | Moisture ≥ 0.5 | WAIT     | Soil is moist enough |
+| 3    | Moisture < 0.3 | IRRIGATE | Soil is too dry      |
+| 4    | Default        | WAIT     | Conservative default |
 
 ## Key Code Sections
 
@@ -46,6 +46,7 @@ The agent receives a percept and immediately selects an action based on predefin
 ```
 
 **Key Points:**
+
 - `percept` is a property list: `(:moisture 0.4 :raining nil)`
 - `getf` extracts values from the property list
 - `cond` evaluates rules in order, returns first match

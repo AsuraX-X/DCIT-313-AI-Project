@@ -38,12 +38,12 @@ This is fundamentally different from reflex agents which have thresholds embedde
 
 ## Decision Logic
 
-| Current State | Relation to Goal | Action | Reasoning |
-|---------------|------------------|--------|-----------|
-| Raining | - | WAIT | Rain helps achieve goal for free |
-| moisture < goal-min | Below goal | IRRIGATE | Need to reach goal |
-| moisture > goal-max | Above goal | WAIT | Wait for evaporation |
-| goal-min ≤ moisture ≤ goal-max | At goal | WAIT | Goal achieved! |
+| Current State                  | Relation to Goal | Action   | Reasoning                        |
+| ------------------------------ | ---------------- | -------- | -------------------------------- |
+| Raining                        | -                | WAIT     | Rain helps achieve goal for free |
+| moisture < goal-min            | Below goal       | IRRIGATE | Need to reach goal               |
+| moisture > goal-max            | Above goal       | WAIT     | Wait for evaporation             |
+| goal-min ≤ moisture ≤ goal-max | At goal          | WAIT     | Goal achieved!                   |
 
 ## Key Code Sections
 
@@ -62,6 +62,7 @@ This is fundamentally different from reflex agents which have thresholds embedde
 ```
 
 **Key Points:**
+
 - `goal-min` and `goal-max` are parameters, not hardcoded
 - The same function creates agents with different goals
 - Returns a closure that "remembers" its specific goal
@@ -73,7 +74,7 @@ This is fundamentally different from reflex agents which have thresholds embedde
 (let ((conservative (make-goal-based-agent 0.50 0.60)))
   ...)
 
-;; Relaxed agent - wide range  
+;; Relaxed agent - wide range
 (let ((relaxed (make-goal-based-agent 0.40 0.80)))
   ...)
 
@@ -85,11 +86,13 @@ This is fundamentally different from reflex agents which have thresholds embedde
 ## Goal-Based vs Reflex Comparison
 
 ### Reflex Agent (rules embedded):
+
 ```lisp
 ((< moisture 0.3) :irrigate)  ;; Hardcoded threshold
 ```
 
 ### Goal-Based Agent (parameterized):
+
 ```lisp
 ((< moisture goal-min) :irrigate)  ;; Configurable goal
 ```
@@ -105,7 +108,7 @@ Moisture Scale:
          │◄─────────────────────────────►│
       goal-min                       goal-max
        (0.45)                         (0.75)
-         
+
 Below goal-min → IRRIGATE
 Above goal-max → WAIT
 In range → WAIT (goal achieved!)
@@ -115,11 +118,11 @@ In range → WAIT (goal achieved!)
 
 The same agent structure handles different scenarios:
 
-| Scenario | goal-min | goal-max | Use Case |
-|----------|----------|----------|----------|
-| Water-saving | 0.40 | 0.65 | Drought conditions |
-| Optimal growth | 0.50 | 0.70 | Normal conditions |
-| Wet-tolerant plants | 0.55 | 0.85 | Water-loving crops |
+| Scenario            | goal-min | goal-max | Use Case           |
+| ------------------- | -------- | -------- | ------------------ |
+| Water-saving        | 0.40     | 0.65     | Drought conditions |
+| Optimal growth      | 0.50     | 0.70     | Normal conditions  |
+| Wet-tolerant plants | 0.55     | 0.85     | Water-loving crops |
 
 ## Running the Simulation
 

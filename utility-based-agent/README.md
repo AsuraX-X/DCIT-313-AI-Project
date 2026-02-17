@@ -60,9 +60,9 @@ predicted_moisture(:wait)     = moisture - 0.02
 ```lisp
 (defun compute-utility (moisture action)
   (let* ((goal 0.6)
-         (predicted-moisture 
+         (predicted-moisture
            (cond
-             ((eq action :irrigate) 
+             ((eq action :irrigate)
               (min 1.0 (+ moisture *irrigation-gain* (- *evaporation-rate*))))
              (t (max 0.0 (- moisture *evaporation-rate*)))))
          (distance-penalty (abs (- predicted-moisture goal)))
@@ -72,6 +72,7 @@ predicted_moisture(:wait)     = moisture - 0.02
 ```
 
 **Step by Step:**
+
 1. Calculate predicted moisture after action
 2. Compute distance from goal (0.6)
 3. Convert distance to comfort (closer = higher)
@@ -96,6 +97,7 @@ predicted_moisture(:wait)     = moisture - 0.02
 **Current moisture: 0.25**
 
 ### For :irrigate
+
 ```
 predicted = min(1.0, 0.25 + 0.25 - 0.02) = 0.48
 distance  = |0.48 - 0.6| = 0.12
@@ -105,6 +107,7 @@ utility   = 0.88 - 0.1 = 0.78
 ```
 
 ### For :wait
+
 ```
 predicted = max(0.0, 0.25 - 0.02) = 0.23
 distance  = |0.23 - 0.6| = 0.37
@@ -117,42 +120,46 @@ utility   = 0.63 - 0.0 = 0.63
 
 ## Utility Table
 
-| Moisture | U(:irrigate) | U(:wait) | Action |
-|----------|--------------|----------|--------|
-| 0.10 | 0.63 | 0.48 | IRRIGATE |
-| 0.20 | 0.73 | 0.58 | IRRIGATE |
-| 0.30 | 0.83 | 0.68 | IRRIGATE |
-| 0.40 | 0.87 | 0.78 | IRRIGATE |
-| **0.50** | **0.77** | **0.88** | **WAIT** ← Crossover point |
-| 0.60 | 0.67 | 0.98 | WAIT |
-| 0.70 | 0.57 | 0.92 | WAIT |
-| 0.80 | 0.50 | 0.82 | WAIT |
+| Moisture | U(:irrigate) | U(:wait) | Action                     |
+| -------- | ------------ | -------- | -------------------------- |
+| 0.10     | 0.63         | 0.48     | IRRIGATE                   |
+| 0.20     | 0.73         | 0.58     | IRRIGATE                   |
+| 0.30     | 0.83         | 0.68     | IRRIGATE                   |
+| 0.40     | 0.87         | 0.78     | IRRIGATE                   |
+| **0.50** | **0.77**     | **0.88** | **WAIT** ← Crossover point |
+| 0.60     | 0.67         | 0.98     | WAIT                       |
+| 0.70     | 0.57         | 0.92     | WAIT                       |
+| 0.80     | 0.50         | 0.82     | WAIT                       |
 
 The crossover happens around moisture 0.44-0.45.
 
 ## Why Predicted State Matters
 
 **Without prediction** (flawed approach):
+
 ```
 U(:irrigate) = comfort(current) - 0.4
 U(:wait)     = comfort(current) - 0.0
 ```
+
 → U(:wait) is ALWAYS 0.4 higher! Agent never irrigates.
 
 **With prediction** (correct approach):
+
 ```
 U(:irrigate) = comfort(predicted_after_irrigate) - 0.1
 U(:wait)     = comfort(predicted_after_wait) - 0.0
 ```
+
 → Agent reasons about consequences!
 
 ## Comparison with Other Agents
 
-| Agent Type | Decision Basis | Trade-offs |
-|------------|----------------|------------|
-| Simple Reflex | Current percept | None |
-| Model-Based | Percept + History | None |
-| Goal-Based | Distance to goal | Binary (at goal or not) |
+| Agent Type        | Decision Basis       | Trade-offs                 |
+| ----------------- | -------------------- | -------------------------- |
+| Simple Reflex     | Current percept      | None                       |
+| Model-Based       | Percept + History    | None                       |
+| Goal-Based        | Distance to goal     | Binary (at goal or not)    |
 | **Utility-Based** | **Expected utility** | **Quantified preferences** |
 
 ## Running the Simulation

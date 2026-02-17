@@ -1,67 +1,65 @@
-(defstruct agent
-  (soil-moisture 50)
-  (valve-on 'CLOSED)
-  (last-watering-time nil)
-  (last-rain-time nil)
-  (moisture-low 30)
-  (moisture-high 60)
-  (irrigation-rate 15)
-  (evaporation-rate 3)
-  (cooldown 3))
+;;;; SI.lisp
+;;;; Smart Irrigation System — Model-Based Reflex Agent (Common Lisp)
+;;;; Agent definition only - use simulate_all.lisp in root to run simulation
 
-(defstruct percept
-  soil-moisture
-  raining
-  time)
+;;;; ============================================================================
+;;;; MODEL-BASED REFLEX AGENT
+;;;; ============================================================================
+;;;;
+;;;; A Model-Based Reflex Agent maintains internal state (memory) to track
+;;;; aspects of the world that cannot be directly perceived. It uses this
+;;;; internal model along with current percepts to make decisions.
+;;;;
+;;;; Characteristics:
+;;;; - Maintains internal state/memory
+;;;; - Tracks history of actions and events
+;;;; - Can handle partially observable environments
+;;;; - More sophisticated than simple reflex agent
+;;;; - Uses condition-action rules informed by internal model
+;;;;
+;;;; Internal State for this irrigation agent:
+;;;; - :last-rain - whether it rained in the previous time step
+;;;; - :last-action - the previous action taken
+;;;;
+;;;; Rules:
+;;;; 1. IF raining THEN wait
+;;;; 2. IF moisture < 0.35 THEN irrigate
+;;;; 3. IF last action was irrigate AND moisture < 0.45 THEN continue irrigating
+;;;; 4. OTHERWISE wait
+;;;;
+;;;; ============================================================================
 
-(defun update-model (agent percept)
-  "Update internal model with current percepts."
-  (setf (agent-soil-moisture agent) (percept-soil-moisture percept))
-  (when (percept-raining percept)
-    (setf (agent-last-rain-time agent) (percept-time percept)))
-  agent)
+(defun make-model-based-reflex-agent ()
+  "
+  Returns a closure that maintains internal state (memory).
+  
+  The agent remembers:
+  - Whether it rained last time step
+  - What action it took last time step
+  
+  This allows it to make more informed decisions, such as
+  continuing to irrigate if it just started and moisture is still low.
+  "
+  (let ((state (list :last-rain nil :last-action nil)))
+    (lambda (percept)
+      (let* ((moisture (getf percept :moisture))
+             (raining (getf percept :raining))
+             (action
+               (cond
+                 ;; Rule 1: Don't irrigate if raining
+                 (raining :wait)
+                 ;; Rule 2: Irrigate if very dry
+                 ((< moisture 0.35) :irrigate)
+                 ;; Rule 3: Continue irrigating if we just started and still below threshold
+                 ((and (getf state :last-action) 
+                       (eq (getf state :last-action) :irrigate)
+                       (< moisture 0.45)) :irrigate)
+                 ;; Rule 4: Otherwise wait
+                 (t :wait))))
+        ;; Update internal model
+        (setf (getf state :last-rain) raining)
+        (setf (getf state :last-action) action)
+        action))))
 
-(defun decide-action (agent percept)
-  "Rule-based decision using internal model + percept. Avoid returning an action that would not change the valve state."
-  (let* ((moist (agent-soil-moisture agent))
-         (raining (percept-raining percept))
-         (now (percept-time percept))
-         (last-water (agent-last-watering-time agent))
-         (cool (agent-cooldown agent))
-         (valve (agent-valve-on agent)))
-    (cond
-      ;; Need water: below low threshold, not raining, cooldown passed, and valve not already OPEN
-      ((and (< moist (agent-moisture-low agent))
-            (not raining)
-            (or (null last-water) (>= (- now last-water) cool))
-            (not (eq valve 'OPEN)))
-       'open-valve)
-      ;; Stop watering on rain or if moisture reached high threshold, and valve not already CLOSED
-      ((and (or raining (>= moist (agent-moisture-high agent)))
-            (not (eq valve 'CLOSED)))
-       'close-valve)
-      (t 'no-op))))
-
-(defun execute-action (agent action now)
-  "Apply action to agent (actuator effect on model)."
-  (case action
-    (open-valve
-     (setf (agent-valve-on agent) 'OPEN)
-     (setf (agent-last-watering-time agent) now)
-     action)
-    (close-valve
-     (setf (agent-valve-on agent) 'CLOSED)
-     action)
-    (no-op nil)))
-
-(defun environment-step (current-moisture agent percept)
-  "Simulate environment change in one time-step.
-Increases if irrigating or raining, decreases by evaporation."
-  (let ((delta 0))
-    (when (percept-raining percept) (incf delta 20))
-    (when (eq (agent-valve-on agent) 'OPEN) (incf delta (agent-irrigation-rate agent)))
-    (decf delta (agent-evaporation-rate agent))
-    (let ((next (+ current-moisture delta)))
-      (max 0 (min 100 next)))))
 
 

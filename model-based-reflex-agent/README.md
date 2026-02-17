@@ -1,44 +1,125 @@
-# Smart Irrigation — Model-Based Reflex Agent
+# Model-Based Reflex Agent
 
-A compact Common Lisp implementation of a model-based reflex agent for a smart irrigation system.
+A **Model-Based Reflex Agent** extends the simple reflex agent by maintaining internal state (memory) to track aspects of the world that cannot be directly perceived.
 
-## Project structure
+## Characteristics
 
-- `SI.lisp` — core agent implementation (data structures, decision logic, actuator, environment step)
-- `sim_SI.lisp` — simulation runner with `run-sim` (scriptable and interactive)
-- `test_SI.lisp` — small test runner for unit tests
-- `SI.md` / `sim_SI.md` — human-readable explanations of core code blocks
-- `run_sim.sh` — convenience wrapper to run the simulation
+- **Has memory** - Maintains internal state across decisions
+- **Tracks history** - Remembers past actions and events
+- **Informed decisions** - Uses both percept AND internal model
+- **Handles partial observability** - Can infer hidden state
+- **More sophisticated** - Than simple reflex agents
 
-## Quick start
+## How It Works
 
-Run the simulation (default):
-
-```sh
-sbcl --script sim_SI.lisp
-# or with explicit flag:
-sbcl --script sim_SI.lisp -- --run-sim
-# or use the wrapper:
-./run_sim.sh
+```
+┌─────────────┐     ┌─────────────────┐     ┌─────────────┐
+│   Sensors   │────▶│  Internal Model │────▶│  Actuators  │
+│  (Percept)  │     │  + IF-THEN Rules│     │  (Action)   │
+└─────────────┘     └────────┬────────┘     └─────────────┘
+                             │
+                    ┌────────▼────────┐
+                    │  Internal State │
+                    │  (Memory)       │
+                    └─────────────────┘
 ```
 
-Run unit tests:
+The agent maintains a model of the world that gets updated with each percept, allowing it to make decisions based on both current observations AND history.
 
-```sh
-sbcl --script test_SI.lisp
+## Internal State
+
+```lisp
+(:last-rain <boolean> :last-action <keyword>)
 ```
 
-Interactive development (REPL):
+- `:last-rain` - Whether it rained in the previous time step
+- `:last-action` - The action taken in the previous time step
 
-```sh
-sbcl --eval "(load \"SI.lisp\")" --eval "(load \"sim_SI.lisp\")"
-;; then call (run-sim :tmax 20 :initial-moisture 30 :rain-times '(4 9)) in the REPL
+## Decision Rules
+
+| Rule | Condition | Action | Reasoning |
+|------|-----------|--------|-----------|
+| 1 | Raining | WAIT | Don't waste water |
+| 2 | Moisture < 0.35 | IRRIGATE | Soil is very dry |
+| 3 | Last action = IRRIGATE AND moisture < 0.45 | IRRIGATE | Continue irrigation cycle |
+| 4 | Default | WAIT | Conservative default |
+
+**Rule 3 is the key difference** - it uses memory to continue an irrigation cycle once started.
+
+## Key Code Sections
+
+### Agent Factory (Closure Pattern)
+
+```lisp
+(defun make-model-based-reflex-agent ()
+  (let ((state (list :last-rain nil :last-action nil)))  ;; Internal state
+    (lambda (percept)
+      ;; Agent logic here - can access and modify 'state'
+      ...)))
 ```
 
-## Notes
+**Key Points:**
+- Uses a **closure** to encapsulate internal state
+- `state` persists between function calls
+- Each call to `make-model-based-reflex-agent` creates a new agent with fresh state
 
-- Valve is represented by symbols `'OPEN` / `'CLOSED`.
-- `decide-action` uses low/high thresholds and a `cooldown` (default 3 steps) to prevent frequent toggling.
-- Tests are lightweight and dependency-free so they run with plain SBCL.
+### Decision Logic with Memory
 
----
+```lisp
+(action
+  (cond
+    (raining :wait)                           ;; Rule 1
+    ((< moisture 0.35) :irrigate)             ;; Rule 2
+    ((and (getf state :last-action)           ;; Rule 3: Check memory!
+          (eq (getf state :last-action) :irrigate)
+          (< moisture 0.45)) :irrigate)
+    (t :wait)))                               ;; Rule 4
+```
+
+### State Update
+
+```lisp
+;; After deciding action, update the internal model
+(setf (getf state :last-rain) raining)
+(setf (getf state :last-action) action)
+```
+
+## Advantage Over Simple Reflex
+
+Consider this scenario:
+
+| Step | Moisture | Simple Reflex | Model-Based |
+|------|----------|---------------|-------------|
+| 1 | 0.30 | IRRIGATE | IRRIGATE |
+| 2 | 0.43 | WAIT | IRRIGATE (continues!) |
+| 3 | 0.46 | WAIT | WAIT |
+
+The model-based agent **continues irrigating** until moisture reaches 0.45, preventing the "start-stop" behavior of the simple reflex agent.
+
+## Closure Explanation
+
+```lisp
+;; Creating the agent
+(let ((agent (make-model-based-reflex-agent)))
+  ;; Using the agent
+  (funcall agent '(:moisture 0.3 :raining nil))  ;; Returns :irrigate
+  (funcall agent '(:moisture 0.4 :raining nil))) ;; Returns :irrigate (remembers!)
+```
+
+The `let` inside `make-model-based-reflex-agent` creates a private `state` variable that only the returned lambda can access - this is the "closure" that gives the agent memory.
+
+## Running the Simulation
+
+```bash
+cd /path/to/DCIT_313
+sbcl --script simulate_all.lisp
+```
+
+## Example Output
+
+```
+Step  1 | Moisture:  0.25 | Rain: NIL | Action: IRRIGATE
+Step  2 | Moisture:  0.48 | Rain: NIL | Action: WAIT
+```
+
+The agent uses its memory of the last action to make more informed decisions.

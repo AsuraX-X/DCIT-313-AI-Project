@@ -38,17 +38,22 @@
   "
   Utility function for irrigation decisions.
   
-  Maximizes comfort (moisture near goal of 0.6)
-  Penalizes water costs for irrigation.
+  Evaluates utility based on PREDICTED moisture after action.
+  This allows the agent to properly weigh the benefit of irrigation.
   
   Utility = comfort - water_cost
-  where comfort = 1 - |moisture - 0.6|
-        water_cost = 0.4 if irrigating, else 0.0
+  where comfort = 1 - |predicted_moisture - 0.6|
+        water_cost = 0.1 if irrigating, else 0.0
   "
   (let* ((goal-moisture 0.6)
-         (distance-from-goal (abs (- moisture goal-moisture)))
+         (predicted-moisture 
+           (cond
+             ((eq action :irrigate) 
+              (min 1.0 (+ moisture *irrigation-gain* (- *evaporation-rate*))))
+             (t (max 0.0 (- moisture *evaporation-rate*)))))
+         (distance-from-goal (abs (- predicted-moisture goal-moisture)))
          (comfort (- 1.0 distance-from-goal))
-         (water-cost (if (eq action :irrigate) 0.4 0.0)))
+         (water-cost (if (eq action :irrigate) 0.1 0.0)))
     (- comfort water-cost)))
 
 (defun utility-based-agent (percept)

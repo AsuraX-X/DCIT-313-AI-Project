@@ -85,11 +85,16 @@
 ;;;; ============================================================================
 
 (defun compute-utility (moisture action)
-  "Compute utility: prefers moisture near goal (0.6), penalizes water cost."
+  "Compute utility based on PREDICTED moisture after action."
   (let* ((goal 0.6)
-         (distance-penalty (abs (- moisture goal)))
+         (predicted-moisture 
+           (cond
+             ((eq action :irrigate) 
+              (min 1.0 (+ moisture *irrigation-gain* (- *evaporation-rate*))))
+             (t (max 0.0 (- moisture *evaporation-rate*)))))
+         (distance-penalty (abs (- predicted-moisture goal)))
          (comfort (- 1.0 distance-penalty))
-         (water-cost (if (eq action :irrigate) 0.4 0.0)))
+         (water-cost (if (eq action :irrigate) 0.1 0.0)))
     (- comfort water-cost)))
 
 (defun utility-based-agent (percept)
